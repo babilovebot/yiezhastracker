@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yiezha's Personal Tracker</title>
+    <style>
+        :root {
+            /* Default User Colors */
+            --bg-body: #fff5f7; 
+            --accent-sakura: #ffb7c5; 
+            --accent-dark: #f08da1;
+            --text-main: #1a1a1a;
+            
+            /* Neutralized UI Elements to blend with any chosen color */
+            --glass-white: rgba(255, 255, 255, 0.85);
+            --text-sub: #666;
+            --font-stack: 'Inter', -apple-system, sans-serif;
+            --card-shadow: rgba(0, 0, 0, 0.05);
+            --card-border: rgba(0, 0, 0, 0.08);
+            --input-border: rgba(0, 0, 0, 0.1);
+            --bg-input: rgba(255, 255, 255, 0.5);
+            --border-light: rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .bento-card {
+            background-color: var(--glass-white);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 4px 15px var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+            transition: border 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+        }
+
+        /* --- HEADER --- */
+        .header-card {
+            grid-column: span 4;
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: flex-end;
+            color: white;
+            background-image: url('https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&q=80&w=1200');
+        }
+
+        .header-mask {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+        }
+
+        .header-content { position: relative; z-index: 2; padding: 10px 20px; }
+        .hero-msg { font-size: 2.2rem; font-weight: 800; margin: 0; }
+        
+        /* POINTS BUBBLE */
+        .points-pill {
+            position: absolute;
+            bottom: 20px; right: 20px;
+            background: var(--accent-sakura);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 100px;
+            font-weight: 800;
+            z-index: 3;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.3s ease;
+        }
+
+        .prize-note {
+            font-size: 0.75rem;
+            background: white;
+            color: var(--accent-dark);
+            padding: 4px 12px;
+            border-radius: 50px;
+            letter-spacing: 0.5px;
+            display: none; 
+            text-transform: lowercase;
+            font-weight: 600;
+        }
+        
+        .prize-note u {
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .prize-note u:hover {
+            opacity: 0.7;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .clock-date-pill {
+            position: absolute;
+            top: 20px; right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-weight: 600;
+            text-align: right;
+            z-index: 3;
+            font-size: 0.85rem;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .upload-trigger {
+            position: absolute;
+            top: 20px; left: 20px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 100px;
+            cursor: pointer;
+            z-index: 3;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        /* --- TASK SECTION --- */
+        .tasks-card { grid-column: span 3; min-height: 500px; }
+        
+        .task-input-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: var(--bg-input);
+            padding: 15px;
+            border-radius: 18px;
+            border: 1px solid var(--border-light);
+            transition: background 0.3s ease, border 0.3s ease;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: var(--glass-white);
+            border-radius: 16px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-light);
+            transition: background-color 0.3s ease, border 0.3s ease;
+        }
+
+        .task-edit-box {
+            background: var(--bg-input);
+            padding: 15px;
+            border-radius: 16px;
+            margin-bottom: 10px;
+            border: 1px solid var(--accent-sakura);
+        }
+
+        .task-title-text {
+            font-weight: 600;
+            padding-bottom: 2px;
+        }
+
+        .priority-tag { font-weight: 800; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; text-transform: uppercase; }
+        .priority-High { background: var(--border-light); color: var(--accent-dark); }
+        .priority-Medium { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-light); }
+        .priority-Low { background: var(--bg-body); color: var(--text-sub); }
+
+        .date-group { font-weight: 700; color: var(--accent-dark); margin: 20px 0 10px 0; font-size: 0.85rem; border-bottom: 1px solid var(--border-light); padding-bottom: 5px; transition: color 0.3s ease, border-bottom 0.3s ease; }
+        
+        .status-dropdown {
+            padding: 6px;
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
+            background: var(--glass-white);
+            color: var(--text-main);
+            font-size: 0.75rem;
+            outline: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* --- TIMETABLE HIGHLIGHT BLOCK --- */
+        .timetable-card { grid-column: span 1; }
+        .time-label-sub { font-size: 0.6rem; color: var(--text-sub); text-transform: uppercase; margin-top: 2px; display: block; text-align: center;}
+        
+        .day-group-container {
+            margin-top: 15px;
+            border-bottom: 2px dashed var(--border-light);
+            padding-bottom: 12px;
+        }
+        .day-group-container:last-child {
+            border-bottom: none;
+        }
+
+        .day-badge {
+            display: inline-block;
+            background: var(--accent-dark);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 900;
+            padding: 4px 10px;
+            border-radius: 50px;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 5px var(--card-shadow);
+            transition: background 0.3s ease;
+        }
+
+        .schedule-item { 
+            padding: 10px; 
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+            font-size: 0.85rem; 
+            margin-bottom: 6px;
+            transition: border 0.3s ease, background 0.3s ease;
+        }
+        .schedule-time { font-size: 0.7rem; color: var(--text-sub); font-weight: bold; display: block; margin-bottom: 2px; }
+        
+        .sched-edit-box {
+            background: var(--bg-input);
+            padding: 10px;
+            border-radius: 12px;
+            margin-top: 4px;
+            border: 1px solid var(--accent-sakura);
+        }
+
+        /* --- UI COMPONENTS --- */
+        input, select { 
+            width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--input-border); outline: none; font-size: 0.85rem; background: var(--glass-white);
+            color: var(--text-main);
+            box-sizing: border-box;
+            transition: border 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+        }
+        .btn-main { 
+            background: var(--accent-sakura); color: white; padding: 12px; border-radius: 10px; 
+            cursor: pointer; border: none; font-weight: bold; width: 100%; margin-bottom: 20px;
+            transition: background 0.2s ease;
+        }
+        .btn-main:hover { background: var(--accent-dark); }
+
+        .tabs { display: flex; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--border-light); align-items: center; }
+        .tab { padding: 8px 0; color: var(--text-sub); cursor: pointer; font-size: 0.9rem; font-weight: 600; }
+        .tab.active { color: var(--accent-dark); border-bottom: 2px solid var(--accent-sakura); }
+
+        .controls-group { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+        
+        /* Color Customizer Panel */
+        .color-panel {
+            display: none;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            background: var(--bg-input);
+            padding: 15px;
+            border-radius: 18px;
+            border: 1px solid var(--border-light);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .color-field {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .color-field label { flex: 1; }
+        .color-field input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+            flex-shrink: 0;
+        }
+        .color-field input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-field input[type="color"]::-webkit-color-swatch {
+            border: 2px solid var(--border-light);
+            border-radius: 50%;
+        }
+        .color-field input[type="text"].hex-input {
+            width: 75px;
+            padding: 5px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            text-align: center;
+            border-radius: 8px;
+            text-transform: uppercase;
+        }
+        
+        .btn-customize {
+            background: none; 
+            border: 1px solid var(--card-border); 
+            color: var(--text-sub); 
+            padding: 6px 12px; 
+            border-radius: 50px; 
+            cursor: pointer; 
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: background 0.2s;
+        }
+        .btn-customize:hover {
+            background: var(--border-light);
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        
+        <div class="bento-card header-card" id="header-el">
+            <div class="header-mask"></div>
+            <input type="file" id="photo-upload" hidden accept="image/*">
+            <button class="upload-trigger" onclick="document.getElementById('photo-upload').click()">UPLOAD HEADER</button>
+            <div class="clock-date-pill" id="gmt-clock">00:00:00</div>
+            
+            <div class="points-pill" id="points-container">
+                <span id="points-text">✨ 0 Points</span>
+                <span class="prize-note" id="babu-note">claim prize via <u onclick="claimPrize()">babu</u></span>
+            </div>
+
+            <div class="header-content">
+                <h1 class="hero-msg" id="hero-quote">Sharpen every step.</h1>
+                <p style="margin:0; opacity:0.8; font-size:0.9rem;" id="hero-author">Daily Reminder</p>
+            </div>
+        </div>
+
+        <div class="bento-card tasks-card">
+            <div class="tabs">
+                <div class="tab active" id="tab-active" onclick="switchTab('active')">Current Tasks</div>
+                <div class="tab" id="tab-history" onclick="switchTab('history')">History</div>
+                
+                <div id="task-counters" style="font-size: 0.75rem; color: var(--text-sub); display: flex; gap: 12px; margin-left: 10px; border-left: 1px solid var(--border-light); padding-left: 12px; align-items: center;">
+                    <span>Total tasks: <b id="cnt-total" style="color:var(--text-main);">0</b></span>
+                    <span>No. of pendings: <b id="cnt-pending" style="color:var(--text-main);">0</b></span>
+                    <span>Accomplished so far: <b id="cnt-accomplished" style="color:var(--accent-dark);">0</b></span>
+                </div>
+
+                <div class="controls-group">
+                    <button class="btn-customize" onclick="toggleColorPanel()">🎨 Customize Colors</button>
+                </div>
+            </div>
+
+            <div id="color-panel" class="color-panel">
+                <div class="color-field">
+                    <label>Background</label>
+                    <input type="color" id="color-bg" value="#fff5f7" oninput="handleColorInput('--bg-body', this.value, 'user_bg', 'hex-bg')">
+                    <input type="text" id="hex-bg" class="hex-input" placeholder="#FFF5F7" oninput="handleHexInput('--bg-body', this.value, 'user_bg', 'color-bg')">
+                </div>
+                <div class="color-field">
+                    <label>Accent</label>
+                    <input type="color" id="color-accent" value="#ffb7c5" oninput="handleColorInput('--accent-sakura', this.value, 'user_accent', 'hex-accent')">
+                    <input type="text" id="hex-accent" class="hex-input" placeholder="#FFB7C5" oninput="handleHexInput('--accent-sakura', this.value, 'user_accent', 'color-accent')">
+                </div>
+                <div class="color-field">
+                    <label>Dark Accent</label>
+                    <input type="color" id="color-accent-dark" value="#f08da1" oninput="handleColorInput('--accent-dark', this.value, 'user_accent_dark', 'hex-accent-dark')">
+                    <input type="text" id="hex-accent-dark" class="hex-input" placeholder="#F08DA1" oninput="handleHexInput('--accent-dark', this.value, 'user_accent_dark', 'color-accent-dark')">
+                </div>
+                <div class="color-field">
+                    <label>Text Color</label>
+                    <input type="color" id="color-text" value="#1a1a1a" oninput="handleColorInput('--text-main', this.value, 'user_text', 'hex-text')">
+                    <input type="text" id="hex-text" class="hex-input" placeholder="#1A1A1A" oninput="handleHexInput('--text-main', this.value, 'user_text', 'color-text')">
+                </div>
+            </div>
+
+            <div id="input-area">
+                <div class="task-input-grid">
+                    <input type="text" id="t-title" placeholder="Task name..." style="grid-column: span 3;">
+                    <select id="t-prio">
+                        <option value="Low">Low Priority (2pts)</option>
+                        <option value="Medium">Medium Priority (5pts)</option>
+                        <option value="High">High Priority (8pts)</option>
+                    </select>
+                    <select id="t-cat"><option>School</option><option>Org</option><option>Personal</option></select>
+                    <input type="text" id="t-link" placeholder="Link or Note...">
+                    <input type="date" id="t-date">
+                    <input type="time" id="t-time" style="grid-column: span 2;">
+                </div>
+                <button class="btn-main" onclick="addTask()">+ Add to Dashboard</button>
+            </div>
+
+            <div id="task-display"></div>
+        </div>
+
+        <div class="bento-card timetable-card">
+            <h2 style="font-size:0.75rem; color:#888; margin-top:0;">Class Timetable</h2>
+            <div style="margin-bottom:15px; background:var(--bg-input); padding:12px; border-radius:18px; border: 1px solid var(--border-light);">
+                <select id="s-day" style="margin-bottom: 5px;"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option></select>
+                <input type="text" id="s-name" placeholder="Subject..." style="margin-bottom: 10px;">
+                
+                <div style="display:flex; gap:8px;">
+                    <div style="flex:1;">
+                        <input type="time" id="s-start">
+                        <span class="time-label-sub">Start</span>
+                    </div>
+                    <div style="flex:1;">
+                        <input type="time" id="s-end">
+                        <span class="time-label-sub">End</span>
+                    </div>
+                </div>
+
+                <button onclick="addSched()" style="width:100%; margin-top:12px; padding:10px; border-radius:10px; background:var(--accent-sakura); color:white; border:none; font-weight:bold; cursor:pointer; font-size:0.7rem;">ADD CLASS</button>
+            </div>
+            <div id="sched-display"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- CUSTOM THEME LOGIC ---
+        function toggleColorPanel() {
+            const panel = document.getElementById('color-panel');
+            panel.style.display = (panel.style.display === 'grid') ? 'none' : 'grid';
+        }
+
+        function handleColorInput(varName, colorVal, storageKey, textId) {
+            document.documentElement.style.setProperty(varName, colorVal);
+            localStorage.setItem(storageKey, colorVal);
+            document.getElementById(textId).value = colorVal;
+        }
+
+        function handleHexInput(varName, inputVal, storageKey, pickerId) {
+            let cleanVal = inputVal.trim();
+            if (cleanVal && !cleanVal.startsWith('#')) {
+                cleanVal = '#' + cleanVal;
+            }
+            const isValidHex = /^#([0-9A-F]{3}){1,2}$/i.test(cleanVal);
+            if (isValidHex) {
+                document.documentElement.style.setProperty(varName, cleanVal);
+                localStorage.setItem(storageKey, cleanVal);
+                document.getElementById(pickerId).value = cleanVal;
+            }
+        }
+
+        function loadCustomColors() {
+            const defaults = {
+                'user_bg': { v: '--bg-body', c: '#fff5f7', pId: 'color-bg', tId: 'hex-bg' },
+                'user_accent': { v: '--accent-sakura', c: '#ffb7c5', pId: 'color-accent', tId: 'hex-accent' },
+                'user_accent_dark': { v: '--accent-dark', c: '#f08da1', pId: 'color-accent-dark', tId: 'hex-accent-dark' },
+                'user_text': { v: '--text-main', c: '#1a1a1a', pId: 'color-text', tId: 'hex-text' }
+            };
+            for (let key in defaults) {
+                let savedColor = localStorage.getItem(key) || defaults[key].c;
+                document.documentElement.style.setProperty(defaults[key].v, savedColor);
+                document.getElementById(defaults[key].pId).value = savedColor;
+                document.getElementById(defaults[key].tId).value = savedColor;
+            }
+        }
+        loadCustomColors();
+
+        // --- POINTS & REWARD LOGIC ---
+        let totalPoints = parseInt(localStorage.getItem('user_pts_v5')) || 0;
+        
+        function updatePoints() {
+            const textEl = document.getElementById('points-text');
+            const containerEl = document.getElementById('points-container');
+            const noteEl = document.getElementById('babu-note');
+            
+            textEl.innerText = `✨ ${totalPoints} Points`;
+            
+            if (totalPoints >= 200) {
+                noteEl.style.display = 'inline-block';
+            } else {
+                noteEl.style.display = 'none';
+            }
+            
+            containerEl.style.animation = 'none';
+            containerEl.offsetHeight; 
+            containerEl.style.animation = 'pop 0.3s ease';
+            localStorage.setItem('user_pts_v5', totalPoints);
+        }
+
+        function claimPrize() {
+            if (totalPoints >= 200) {
+                totalPoints -= 200;
+                updatePoints();
+                alert("Prize claimed!");
+            }
+        }
+
+        // --- COUNTER LOGIC ---
+        function updateCounters() {
+            const act = load('t_act_v5');
+            const his = load('t_his_v5');
+            const pending = act.length;
+            const accomplished = his.length;
+            const total = pending + accomplished;
+            
+            document.getElementById('cnt-total').innerText = total;
+            document.getElementById('cnt-pending').innerText = pending;
+            document.getElementById('cnt-accomplished').innerText = accomplished;
+        }
+
+        // --- RANDOM MESSAGES ---
+        const messages = [
+            {t: "New Mail 💌 from babu", a: "Do your best, my rockstar!"},
+            {t: "New Mail 💌 from babu", a: "You're always my number one girl."},
+            {t: "New Mail 💌 from yanna maryel ", a: "Yiezha Yen, I can't contain all the things I wanna say to you in just one line, but I just want you to always remember na you are enough, you are so very very good sa lahat ng mga bagay na ginagawa mo at gagawin mo pa. I believe in you. "},
+            {t: "New Mail 💌 from rod", a: "Hi there! I just wanted to say how incredibly thankful I am to know someone as authentic and amazing as you. I love uu bes!!"},
+            {t: "New Mail 💌 from atty. ava gyna ", a: "Yen, I hope life gives you the same warmth and kindness you always give to others."},
+            {t: "New Mail 💌 from lea <3", a: "so so proud of how far you've come :)"},
+            {t: "New Mail 💌 from your soul sister <3", a: "carpe diem, yen!"},
+            {t: "New Mail 💌 from rika", a: "hi yen! una sa lahat, happy motmot sainyu ng bf moh! ayunnn,,, super thankful ako na nakilala kita andd i hope that you'll stay as kind and thoughtful as u are right now. 🫶✨"},
+            {t: "New Mail 💌 from nate", a: "You're like a sister to me..."},
+            {t: "New Mail 💌 from nate", a: "I'll always be here for you, Sister..."},
+            {t: "New Mail 💌 from babu", a: "please take care of yourself and take a break sometimes!"},
+            {t: "New Mail 💌 from babu", a: "nagkaon ka na lhab? suri ha kay saba gyud ni sila. i miss you... mwa"},
+            {t: "New Mail 💌 from Project Hail Mary (2026)", a: "Human beings have a remarkable ability to accept the abnormal and make it normal."},
+            {t: "New Mail 💌 from Little Women (#1)", a: "I am not afraid of storms, for I am learning how to sail my ship."},
+            {t: "New Mail 💌 from The Perks of Being a Wallflower", a: "So, this is my life. And I want you to know that I am both happy and sad and I'm still trying to figure out how that could be."},
+            {t: "New Mail 💌 from The Perks of Being a Wallflower", a: "please believe that things are good with me, and even when they're not, they will be soon enough."},
+            {t: "New Mail 💌 from All Might (mha)", a: "f you feel yourself hitting up against your limit, remember for what cause you clench your fists! Remember why you started down this path, and let that memory carry you beyond your limit"},
+            {t: "New Mail 💌 from Pride and Prejudice", a: "There is a stubbornness about me that never can bear to be frightened at the will of others. My courage always rises at every attempt to intimidate me."},
+            {t: "New Mail 💌 from Kulang Na Silya", a: "Accept constraints. Lahat ng kahon ay oportunidad para mapilitan kang gumawa ng butas upang makalabas."},
+            {t: "New Mail 💌 from babu", a: "if you're reading this, it means i am giving you a ghost hug!"},
+            {t: "New Mail 💌 from babu", a: "whenever you are tired, and I quote Queen Charlotte from the Bridgerton side story, come hide from the heavens with me."},
+            {t: "New Mail 💌 from babu", a: "you're doing really great!!!!"},
+            {t: "New Mail 💌 from babu", a: "i hope you know that you are loved always, in all ways."},
+            {t: "New Mail 💌 from babu", a: "you got a hug, now you also get a ghost kiss from me :3"},
+            {t: "New Mail 💌 from babu", a: "take the time to breathe and drink a glass of water!"},
+            {t: "New Mail 💌 from babu", a: "i love you. i hope you're happy today!"},
+            {t: "New Mail 💌 from babu", a: "please be well, baby"}
+        ];
+        const pick = messages[Math.floor(Math.random() * messages.length)];
+        document.getElementById('hero-quote').innerText = pick.t;
+        document.getElementById('hero-author').innerText = "- " + pick.a;
+
+        // --- HEADER UPLOAD ---
+        const photoInput = document.getElementById('photo-upload');
+        photoInput.onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                localStorage.setItem('user_header_v5', reader.result);
+                document.getElementById('header-el').style.backgroundImage = `url(${reader.result})`;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        };
+        const saved = localStorage.getItem('user_header_v5');
+        if(saved) document.getElementById('header-el').style.backgroundImage = `url(${saved})`;
+
+        // --- CLOCK & COUNTDOWN LOGIC ---
+        function updateClock() {
+            const localNow = new Date();
+            // Sync with GMT+8 exactly as originally formatted
+            const gmt8 = new Date(localNow.getTime() + (localNow.getTimezoneOffset() * 60000) + (8 * 3600000));
+            
+            document.getElementById('gmt-clock').innerHTML = 
+                gmt8.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + 
+                `<br>` + gmt8.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                
+            updateCountdowns(gmt8);
+        }
+        
+        function updateCountdowns(gmt8Now) {
+            document.querySelectorAll('.task-countdown').forEach(el => {
+                const d = el.getAttribute('data-date');
+                if (!d) return;
+                
+                let t = el.getAttribute('data-time') || '23:59';
+                if (t.length === 5) t += ':00'; // Ensure smooth parsing
+                
+                const deadline = new Date(`${d}T${t}`);
+                const diff = deadline - gmt8Now;
+
+                if (diff > 0) {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                    const minutes = Math.floor((diff / 1000 / 60) % 60);
+
+                    if (days > 0) {
+                        el.innerText = `⏳ ${days}d ${hours}h left`;
+                        el.style.color = 'var(--text-sub)';
+                    } else {
+                        // Under 24 hours - display hours and minutes, highlighted
+                        el.innerText = `⏳ ${hours}h ${minutes}m left`;
+                        el.style.color = 'var(--accent-dark)'; 
+                    }
+                } else {
+                    el.innerText = `⚠️ Overdue`;
+                    el.style.color = 'red';
+                }
+            });
+        }
+        
+        setInterval(updateClock, 1000); 
+        updateClock(); // Initial fire so there's no 1-second delay
+
+        // --- CORE STORAGE AND RENDER CONTROL ---
+        const load = (k) => JSON.parse(localStorage.getItem(k)) || [];
+        const save = (k, d) => localStorage.setItem(k, JSON.stringify(d));
+        let activeTab = 'active';
+        let editingSchedIndex = null;
+        let editingTaskIndex = null;
+
+        // --- COMPREHENSIVE TASK EDITING SYSTEM ---
+        function openTaskEditor(index) {
+            editingTaskIndex = index;
+            renderTasks();
+        }
+
+        function saveTaskEdits(index) {
+            const listKey = 't_act_v5';
+            const data = load(listKey);
+            const updatedTitle = document.getElementById(`edit-t-title-${index}`).value;
+            
+            if (!updatedTitle.trim()) return;
+
+            data[index].title = updatedTitle.trim();
+            data[index].prio = document.getElementById(`edit-t-prio-${index}`).value;
+            data[index].cat = document.getElementById(`edit-t-cat-${index}`).value;
+            data[index].link = document.getElementById(`edit-t-link-${index}`).value;
+            data[index].date = document.getElementById(`edit-t-date-${index}`).value;
+            data[index].time = document.getElementById(`edit-t-time-${index}`).value;
+
+            save(listKey, data);
+            editingTaskIndex = null;
+            renderTasks();
+        }
+
+        function handleStatusChange(el, i) {
+            if(el.value === 'Done') {
+                doneTask(i);
+            } else {
+                const act = load('t_act_v5');
+                act[i].status = el.value;
+                save('t_act_v5', act);
+                renderTasks();
+            }
+        }
+
+        function renderTasks() {
+            const list = activeTab === 'active' ? load('t_act_v5') : load('t_his_v5');
+            const display = document.getElementById('task-display');
+            
+            const indexedList = list.map((item, originalIndex) => ({ item, originalIndex }));
+
+            const grouped = indexedList.reduce((acc, obj) => {
+                const d = obj.item.date || 'No Deadline';
+                if(!acc[d]) acc[d] = [];
+                acc[d].push(obj);
+                return acc;
+            }, {});
+
+            let html = '';
+            Object.keys(grouped).sort().forEach(date => {
+                html += `<div class="date-group">${date}</div>`;
+                grouped[date].forEach(obj => {
+                    const t = obj.item;
+                    const idx = obj.originalIndex;
+                    
+                    if (activeTab === 'active' && editingTaskIndex === idx) {
+                        html += `
+                            <div class="task-edit-box">
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;">
+                                    <input type="text" id="edit-t-title-${idx}" value="${t.title}" placeholder="Task name..." style="grid-column: span 2;">
+                                    <select id="edit-t-prio-${idx}">
+                                        <option value="Low" ${t.prio === 'Low' ? 'selected' : ''}>Low Priority (2pts)</option>
+                                        <option value="Medium" ${t.prio === 'Medium' ? 'selected' : ''}>Medium Priority (5pts)</option>
+                                        <option value="High" ${t.prio === 'High' ? 'selected' : ''}>High Priority (8pts)</option>
+                                    </select>
+                                    <select id="edit-t-cat-${idx}">
+                                        <option ${t.cat === 'School' ? 'selected' : ''}>School</option>
+                                        <option ${t.cat === 'Org' ? 'selected' : ''}>Org</option>
+                                        <option ${t.cat === 'Personal' ? 'selected' : ''}>Personal</option>
+                                    </select>
+                                    <input type="text" id="edit-t-link-${idx}" value="${t.link || ''}" placeholder="Link or Note...">
+                                    <input type="date" id="edit-t-date-${idx}" value="${t.date || ''}">
+                                    <input type="time" id="edit-t-time-${idx}" value="${t.time || ''}" style="grid-column: span 2;">
+                                </div>
+                                <div style="display:flex; gap:6px;">
+                                    <button onclick="saveTaskEdits(${idx})" style="flex:1; background:var(--accent-dark); color:white; border:none; padding:6px; border-radius:8px; font-size:0.75rem; font-weight:bold; cursor:pointer;">Save</button>
+                                    <button onclick="editingTaskIndex=null; renderTasks();" style="flex:1; background:#ccc; color:white; border:none; padding:6px; border-radius:8px; font-size:0.75rem; font-weight:bold; cursor:pointer;">Cancel</button>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="task-item">
+                                <div style="flex:1">
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <span class="task-title-text" style="${activeTab === 'history' ? 'opacity:0.4; text-decoration:line-through;' : ''}">${t.title}</span>
+                                        <div style="display:flex; align-items:center; gap: 10px;">
+                                            <span class="priority-tag priority-${t.prio}">${t.prio}</span>
+                                            
+                                            ${activeTab === 'active' ? `
+                                                <select class="status-dropdown" onchange="handleStatusChange(this, ${idx})">
+                                                    <option value="Not started" ${t.status === 'Not started' ? 'selected' : ''}>Not started</option>
+                                                    <option value="In progress" ${t.status === 'In progress' ? 'selected' : ''}>In progress</option>
+                                                    <option value="Done">Done</option>
+                                                </select>
+                                                <span style="cursor:pointer; color: var(--accent-dark); font-size:1rem;" onclick="openTaskEditor(${idx})" title="Edit Task">✏️</span>
+                                            ` : `
+                                                <span style="font-size: 0.65rem; font-weight: 800; color: var(--text-sub); padding: 4px 8px; background: var(--border-light); border-radius: 5px;">DONE</span>
+                                                <span style="cursor:pointer; color: var(--accent-dark); font-size:1.1rem; font-weight:bold;" onclick="recoverTask(${idx})" title="Recover Task">↺</span>
+                                            `}
+
+                                            <span style="cursor:pointer; color:#b0b0b0; font-size:1rem; font-weight:bold;" onclick="deleteTask(${idx})" title="Delete Task">✕</span>
+                                        </div>
+                                    </div>
+                                    <div class="task-meta" style="font-size: 0.75rem; color: var(--text-sub); margin-top: 4px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                        <span><span style="color:var(--accent-dark); font-weight:700;">${t.time || ''}</span> • <b>${t.cat}</b> 
+                                        ${t.link ? `• <a href="${t.link}" target="_blank" style="color:var(--accent-dark); font-weight: bold;">Link/Note</a>` : ''}</span>
+                                        
+                                        ${activeTab === 'active' && t.date ? `
+                                            <span class="task-countdown" data-date="${t.date}" data-time="${t.time || ''}" style="background: var(--bg-input); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-light); font-weight: 700; font-size: 0.65rem;"></span>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            });
+            display.innerHTML = html || `<p style="text-align:center; color:#ccc; margin-top:50px;">Clean slate.</p>`;
+            
+            // Refresh counters and instantly apply countdown logic to new elements
+            updateCounters();
+            
+            const localNow = new Date();
+            const gmt8 = new Date(localNow.getTime() + (localNow.getTimezoneOffset() * 60000) + (8 * 3600000));
+            updateCountdowns(gmt8); 
+        }
+
+        function addTask() {
+            const title = document.getElementById('t-title').value;
+            if(!title) return;
+            const data = load('t_act_v5');
+            data.push({
+                title, prio: document.getElementById('t-prio').value,
+                cat: document.getElementById('t-cat').value,
+                link: document.getElementById('t-link').value,
+                date: document.getElementById('t-date').value,
+                time: document.getElementById('t-time').value,
+                status: 'Not started'
+            });
+            save('t_act_v5', data);
+            document.getElementById('t-title').value = '';
+            document.getElementById('t-link').value = '';
+            document.getElementById('t-date').value = '';
+            document.getElementById('t-time').value = '';
+            renderTasks();
+        }
+
+        function doneTask(i) {
+            const act = load('t_act_v5'); const his = load('t_his_v5');
+            const task = act.splice(i, 1)[0];
+            
+            let pts = 0;
+            if (task.prio === 'High') pts = 8;
+            else if (task.prio === 'Medium') pts = 5;
+            else if (task.prio === 'Low') pts = 2;
+            else pts = 2; 
+
+            totalPoints += pts;
+            updatePoints();
+            
+            task.status = 'Done';
+            his.push(task);
+            save('t_act_v5', act); save('t_his_v5', his);
+            renderTasks();
+        }
+        
+        function recoverTask(i) {
+            const act = load('t_act_v5');
+            const his = load('t_his_v5');
+            const task = his.splice(i, 1)[0];
+            
+            let pts = 0;
+            if (task.prio === 'High') pts = 8;
+            else if (task.prio === 'Medium') pts = 5;
+            else if (task.prio === 'Low') pts = 2;
+            else pts = 2; 
+
+            totalPoints -= pts;
+            if (totalPoints < 0) totalPoints = 0;
+            updatePoints();
+            
+            task.status = 'In progress'; 
+            act.push(task);
+            
+            save('t_act_v5', act); 
+            save('t_his_v5', his);
+            renderTasks();
+        }
+
+        function deleteTask(i) {
+            if(!confirm("Are you sure you want to delete this task completely?")) return;
+            const listKey = activeTab === 'active' ? 't_act_v5' : 't_his_v5';
+            const data = load(listKey);
+            data.splice(i, 1);
+            save(listKey, data);
+            renderTasks();
+        }
+
+        function switchTab(t) {
+            activeTab = t;
+            document.getElementById('tab-active').className = t === 'active' ? 'tab active' : 'tab';
+            document.getElementById('tab-history').className = t === 'history' ? 'tab active' : 'tab';
+            document.getElementById('input-area').style.display = t === 'active' ? 'block' : 'none';
+            renderTasks();
+        }
+
+        // --- TIMETABLE EDITING SYSTEM ---
+        function openSchedEditor(index) {
+            editingSchedIndex = index;
+            renderSched();
+        }
+
+        function saveSchedEdits(index) {
+            const data = load('t_sch_v5');
+            const updatedName = document.getElementById(`edit-s-name-${index}`).value;
+            const updatedStart = document.getElementById(`edit-s-start-${index}`).value;
+            const updatedEnd = document.getElementById(`edit-s-end-${index}`).value;
+            
+            if(!updatedName || !updatedStart || !updatedEnd) return;
+            
+            data[index].name = updatedName;
+            data[index].start = updatedStart;
+            data[index].end = updatedEnd;
+            
+            save('t_sch_v5', data);
+            editingSchedIndex = null;
+            renderSched();
+        }
+
+        function renderSched() {
+            const data = load('t_sch_v5');
+            const display = document.getElementById('sched-display');
+            const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+            let html = '';
+            
+            days.forEach(d => {
+                const itemsWithIndex = data.map((item, globalIdx) => ({item, globalIdx})).filter(obj => obj.item.day === d);
+                
+                if(itemsWithIndex.length > 0) {
+                    html += `<div class="day-group-container">`;
+                    html += `<div class="day-badge">${d}</div>`;
+                    
+                    itemsWithIndex.forEach(obj => {
+                        const i = obj.item;
+                        const gIdx = obj.globalIdx;
+                        
+                        if (editingSchedIndex === gIdx) {
+                            html += `
+                                <div class="sched-edit-box">
+                                    <input type="text" id="edit-s-name-${gIdx}" value="${i.name}" style="margin-bottom:6px; padding:6px;">
+                                    <div style="display:flex; gap:4px; margin-bottom:6px;">
+                                        <input type="time" id="edit-s-start-${gIdx}" value="${i.start}" style="padding:4px;">
+                                        <input type="time" id="edit-s-end-${gIdx}" value="${i.end}" style="padding:4px;">
+                                    </div>
+                                    <div style="display:flex; gap:4px;">
+                                        <button onclick="saveSchedEdits(${gIdx})" style="flex:1; background:var(--accent-dark); color:white; border:none; padding:4px; border-radius:6px; font-size:0.65rem; font-weight:bold; cursor:pointer;">Save</button>
+                                        <button onclick="editingSchedIndex=null; renderSched();" style="flex:1; background:#ccc; color:white; border:none; padding:4px; border-radius:6px; font-size:0.65rem; font-weight:bold; cursor:pointer;">Cancel</button>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            html += `
+                                <div class="schedule-item">
+                                    <span class="schedule-time">⏱️ ${i.start} - ${i.end}</span>
+                                    <b style="color: var(--text-main); font-size: 0.9rem;">${i.name}</b> 
+                                    <div style="float:right; display:flex; gap:8px; margin-top: 2px;">
+                                        <span style="cursor:pointer; color: var(--accent-dark); font-size:0.8rem;" onclick="openSchedEditor(${gIdx})" title="Edit Class">✏️</span>
+                                        <span style="cursor:pointer; color:#b0b0b0; font-weight:bold;" onclick="delSched(${gIdx})" title="Delete Class">✕</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    html += `</div>`;
+                }
+            });
+            display.innerHTML = html;
+        }
+
+        function addSched() {
+            const name = document.getElementById('s-name').value;
+            const start = document.getElementById('s-start').value;
+            const end = document.getElementById('s-end').value;
+            if(!name || !start || !end) return;
+            const data = load('t_sch_v5');
+            data.push({
+                day: document.getElementById('s-day').value,
+                name, start, end
+            });
+            save('t_sch_v5', data);
+            document.getElementById('s-name').value = '';
+            document.getElementById('s-start').value = '';
+            document.getElementById('s-end').value = '';
+            renderSched();
+        }
+
+        function delSched(i) {
+            if(!confirm("Are you sure you want to delete this class?")) return;
+            const data = load('t_sch_v5');
+            data.splice(i, 1);
+            save('t_sch_v5', data);
+            renderSched();
+        }
+
+        // --- INITIAL LAYOUT RENDERING ---
+        renderTasks();
+        renderSched();
+        updatePoints();
+    </script>
+</body>
+</html>
